@@ -1,9 +1,12 @@
 package stellarutils
 
 import (
-	"bufio"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 type FederationResponse struct {
@@ -15,25 +18,38 @@ type FederationResponse struct {
 	} `json:"federation_json"`
 }
 
-func ResolveFederationURL(url string) string {
-	resp, err := http.Get(url)
+func ResolveAddress(fedURL string, user string) string {
+	userInfo := strings.Split(user, "@")
+	username := userInfo[0]
+	domain := userInfo[1]
+	params := url.Values{}
+
+	// Add required URL params
+	params.Add("destination", username)
+	params.Add("domain", domain)
+	params.Add("type", "federation")
+	params.Add("user", username)
+
+	// Make request to federation service.
+	resp, err := http.Get(fedURL + "?" + params.Encode())
 	if err != nil {
-		fmt.Println("Coulnd't fetch Stellar.txt")
+		fmt.Println("Couldn't query federation service")
 	}
 	defer resp.Body.Close()
 
-	var federationURL string
-
-	// Go through response and find federation URL
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "[federation_url]" {
-			fmt.Println("Found federation URL...")
-			scanner.Scan()
-			federationURL = scanner.Text()
-		}
+	// Read response into byte array
+	federationBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Invalid data from federation service")
 	}
 
-	return federationURL
+	federationResponse := FederationResponse{}
+
+	// Unmarshall the byte array into a FederationResponse type
+	err = json.Unmarshal(federationBody, &federationResponse)
+	if err != nil {
+		fmt.Println("Could not unmarshall federation response")
+	}
+
+	return federationResponse.FederationJSON.DestinationAddress
 }
