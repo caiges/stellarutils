@@ -53,3 +53,8 @@ func ResolveAddress(fedURL string, user string) string {
 
 	return federationResponse.FederationJSON.DestinationAddress
 }
+
+func DomainVariants(domain string) []string {
+	variants := []string{"stellar." + domain, domain, "www." + domain}
+	return variants
+}
