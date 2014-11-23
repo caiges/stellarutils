@@ -18,17 +18,24 @@ type FederationResponse struct {
 	} `json:"federation_json"`
 }
 
-func ResolveAddress(fedURL string, user string) string {
+func ResolveFederationUser(user string) FederationResponse {
 	userInfo := strings.Split(user, "@")
 	username := userInfo[0]
 	domain := userInfo[1]
 	params := url.Values{}
+	stellarTxtDomains := DomainVariants(domain)
+
+	// Append "/stellar.txt" to the end of each variant.
+	for i, _ := range stellarTxtDomains {
+		stellarTxtDomains[i] += "/stellar.txt"
+	}
+
+	federationURL := ResolveFederationURL(stellarTxtDomains)
 
 	// Add required URL params
 	params.Add("destination", username)
 	params.Add("domain", domain)
 	params.Add("type", "federation")
-	params.Add("user", username)
 
 	// Make request to federation service.
 	resp, err := http.Get(fedURL + "?" + params.Encode())
@@ -51,10 +58,11 @@ func ResolveAddress(fedURL string, user string) string {
 		fmt.Println("Could not unmarshall federation response")
 	}
 
-	return federationResponse.FederationJSON.DestinationAddress
+	return federationResponse
 }
 
 func DomainVariants(domain string) []string {
+	// Search order specified in https://github.com/stellar/docs/blob/master/docs/Stellar.txt.md
 	variants := []string{"stellar." + domain, domain, "www." + domain}
 	return variants
 }
