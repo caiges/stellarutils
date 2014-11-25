@@ -1,6 +1,7 @@
 package stellarutils
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -18,10 +19,44 @@ type StellarTxtQueue struct {
 
 func (queue *StellarTxtQueue) Add(stellarTxtResponse StellarTxtResponse) (int, error) {
 	if len(queue.Queue) == 3 {
-		return -1, fmt.Errorf("stellarutils: Could not add StellarTxtResponse we already have the maximum of 3 %v", queue.Queue)
+		return -1, fmt.Errorf("Could not add StellarTxtResponse we already have the maximum of 3 %v", queue.Queue)
 	}
+
+	if queue.Exists(stellarTxtResponse.URL) {
+		return -1, fmt.Errorf("Response already exists in queue: %v", queue.Queue)
+	}
+
 	queue.Queue = append(queue.Queue, stellarTxtResponse)
 	return len(queue.Queue) - 1, nil
+}
+
+func (queue *StellarTxtQueue) Exists(url string) bool {
+	for _, value := range queue.Queue {
+		if url == value.URL {
+			return true
+		}
+	}
+	return false
+}
+
+func (queue *StellarTxtQueue) Get(url string) (*StellarTxtResponse, error) {
+	for i, value := range queue.Queue {
+		if value.URL == url {
+			return &queue.Queue[i], nil
+		}
+	}
+
+	return nil, errors.New("Item not found")
+}
+
+func (queue *StellarTxtQueue) SetResult(url string, body string) (*StellarTxtResponse, error) {
+	response, err := queue.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	response.Body = body
+	return response, nil
 }
 
 func ResolveFederationURL(domainVariants []string) (string, error) {
