@@ -31,7 +31,7 @@ func ResolveFederationUser(user string) FederationResponse {
 	}
 
 	federationURL, err := ResolveFederationURL(stellarTxtDomains)
-
+	fmt.Printf("%v", federationURL)
 	// Add required URL params
 	params.Add("destination", username)
 	params.Add("domain", domain)
