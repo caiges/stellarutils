@@ -1,9 +1,9 @@
 package stellarutils
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sync"
 )
 
 // Resolve the federation URL from the Stellar.txt file.
@@ -38,22 +38,19 @@ type StellarTxtResponse struct {
 }
 
 type StellarTxtQueue struct {
-	Queue struct {
-		sync.RWMutex
-		Data map[string]string
-	}
+	Queue []map[string]string
 }
 
-func ResolveFederationURL(domainVariants) (string, error) {
+func ResolveFederationURL(domainVariants []string) (string, error) {
 	stellarTxt, err := FetchStellarTxt(domainVariants)
 	if err != nil {
-		return err
+		return "", err
 	}
 	federationURL, err := ParseFederationURL(stellarTxt)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return federationURL
+	return federationURL, nil
 }
 
 func FetchStellarTxt(urls []string) (string, error) {
@@ -65,7 +62,7 @@ func FetchStellarTxt(urls []string) (string, error) {
 			// Fetch the URL.
 			body, err := fetch(url)
 			if err != nil {
-				errorChannel <- StellarTxtError{URL: url, Err: err}
+				errorChannel <- StellarTxtResponse{URL: url, Err: err}
 				return
 			}
 			responseChannel <- StellarTxtResponse{URL: url, Body: body}
@@ -76,11 +73,19 @@ func FetchStellarTxt(urls []string) (string, error) {
 		select {
 		case resp := <-responseChannel:
 			// Set response on queue item. If response satisfies index 0 return it.
+			fmt.Printf("%v", resp)
 		case resp := <-errorChannel:
 			// Remove from queue.
 			// Check next item in queue for response and return it, otherwise do nothing.
+			fmt.Printf("%v", resp)
 		}
 	}
+
+	return "", nil
+}
+
+func ParseFederationURL(stellarTxt string) (string, error) {
+	return "", nil
 }
 
 func fetch(url string) (string, error) {

@@ -30,7 +30,7 @@ func ResolveFederationUser(user string) FederationResponse {
 		stellarTxtDomains[i] += "/stellar.txt"
 	}
 
-	federationURL := ResolveFederationURL(stellarTxtDomains)
+	federationURL, err := ResolveFederationURL(stellarTxtDomains)
 
 	// Add required URL params
 	params.Add("destination", username)
