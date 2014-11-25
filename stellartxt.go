@@ -75,14 +75,14 @@ func (queue *StellarTxtQueue) Get(url string) (*StellarTxtResponse, error) {
 	return nil, errors.New("Item not found")
 }
 
-func (queue *StellarTxtQueue) SetResult(url string, body string) (*StellarTxtResponse, error) {
+func (queue *StellarTxtQueue) SetResult(url string, body string) (*StellarTxtResponse, int, error) {
 	response, err := queue.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 
 	response.Body = body
-	return response, nil
+	return response, -1, nil
 }
 
 func ResolveFederationURL(domainVariants []string) (string, error) {
@@ -120,13 +120,20 @@ func FetchStellarTxt(urls []string) (string, error) {
 		select {
 		case resp := <-responseChannel:
 			// Set response on queue item. If response satisfies index 0 return it.
-			responseQueue.SetResult(resp.URL, resp.Body)
-			fmt.Printf("%v", resp)
+			response, i, err := responseQueue.SetResult(resp.URL, resp.Body)
+			if err == nil && response != nil && i == 0 {
+				return response.Body, nil
+			}
+			//fmt.Printf("%v", resp)
 		case resp := <-errorChannel:
 			// Remove from queue.
 			responseQueue.Remove(resp.URL)
 			// Check next item in queue for response and return it, otherwise do nothing.
-			fmt.Printf("%v", resp)
+			next := responseQueue.Head()
+			if next != nil && next.Body != "" {
+				return next.Body, nil
+			}
+			//fmt.Printf("%v", resp)
 		}
 	}
 
