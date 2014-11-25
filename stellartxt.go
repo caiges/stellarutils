@@ -49,6 +49,13 @@ func (queue *StellarTxtQueue) Remove(url string) (*StellarTxtResponse, error) {
 	return nil, nil
 }
 
+func (queue *StellarTxtQueue) Head() *StellarTxtResponse {
+	if len(queue.Queue) > 0 {
+		return &queue.Queue[0]
+	}
+	return nil
+}
+
 func (queue *StellarTxtQueue) Exists(url string) bool {
 	for _, value := range queue.Queue {
 		if url == value.URL {

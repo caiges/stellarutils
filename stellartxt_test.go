@@ -34,6 +34,22 @@ func TestRemove(t *testing.T) {
 	}
 }
 
+func TestHead(t *testing.T) {
+	queue := StellarTxtQueue{}
+
+	if queue.Head() != nil {
+		t.Errorf("Should get nil if queue is empty")
+	}
+
+	queue.Add(StellarTxtResponse{URL: "1", Body: "blars"})
+
+	head := queue.Head()
+
+	if head == nil {
+		t.Errorf("Should get a StellarTxtResponse but had: %v", queue.Queue)
+	}
+}
+
 func TestExists(t *testing.T) {
 	queue := StellarTxtQueue{}
 	queue.Add(StellarTxtResponse{URL: "1", Body: "blars"})
