@@ -40,6 +40,7 @@ func ResolveFederationUser(user string) FederationResponse {
 	// Make request to federation service.
 	resp, err := http.Get(federationURL + "?" + params.Encode())
 	if err != nil {
+		fmt.Printf("URL: %v", federationURL)
 		fmt.Println("Couldn't query federation service")
 	}
 	defer resp.Body.Close()
@@ -63,6 +64,6 @@ func ResolveFederationUser(user string) FederationResponse {
 
 func DomainVariants(domain string) []string {
 	// Search order specified in https://github.com/stellar/docs/blob/master/docs/Stellar.txt.md
-	variants := []string{"stellar." + domain, domain, "www." + domain}
+	variants := []string{"https://stellar." + domain, "https://" + domain, "https://www." + domain}
 	return variants
 }

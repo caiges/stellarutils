@@ -93,6 +93,7 @@ func ResolveFederationURL(domainVariants []string) (string, error) {
 		return "", err
 	}
 	federationURL, err := ParseFederationURL(stellarTxt)
+	fmt.Printf("%v", federationURL)
 	if err != nil {
 		return "", err
 	}
@@ -126,7 +127,6 @@ func FetchStellarTxt(urls []string) (string, error) {
 			if err == nil && response != nil && i == 0 {
 				return response.Body, nil
 			}
-			//fmt.Printf("%v", resp)
 		case resp := <-errorChannel:
 			// Remove from queue.
 			responseQueue.Remove(resp.URL)
@@ -135,7 +135,6 @@ func FetchStellarTxt(urls []string) (string, error) {
 			if next != nil && next.Body != "" {
 				return next.Body, nil
 			}
-			//fmt.Printf("%v", resp)
 		}
 	}
 
@@ -163,6 +162,11 @@ func fetch(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if res.StatusCode != 200 {
+		return "", errors.New("Status code is not supported")
+	}
+
 	body, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
