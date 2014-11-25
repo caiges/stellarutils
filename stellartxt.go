@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"time"
 )
 
 type StellarTxtResponse struct {
@@ -158,17 +160,28 @@ func ParseFederationURL(stellarTxt string) (string, error) {
 }
 
 func fetch(url string) (string, error) {
-	res, err := http.Get(url)
+	var timeout = time.Duration(2 * time.Second)
+	transport := http.Transport{
+		Dial: func(network, addr string) (net.Conn, error) {
+			return net.DialTimeout(network, addr, timeout)
+		},
+	}
+
+	client := http.Client{
+		Transport: &transport,
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		return "", err
 	}
 
-	if res.StatusCode != 200 {
+	if resp.StatusCode != 200 {
 		return "", errors.New("Status code is not supported")
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 	if err != nil {
 		return "", err
 	}
