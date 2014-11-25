@@ -3,6 +3,7 @@ package stellarutils
 import (
 	"io/ioutil"
 	"net/http"
+	"sync"
 )
 
 // Resolve the federation URL from the Stellar.txt file.
@@ -36,6 +37,13 @@ type StellarTxtResponse struct {
 	Err  error
 }
 
+type StellarTxtQueue struct {
+	Queue struct {
+		sync.RWMutex
+		Data map[string]string
+	}
+}
+
 func ResolveFederationURL(domainVariants) (string, error) {
 	stellarTxt, err := FetchStellarTxt(domainVariants)
 	if err != nil {
@@ -49,8 +57,6 @@ func ResolveFederationURL(domainVariants) (string, error) {
 }
 
 func FetchStellarTxt(urls []string) (string, error) {
-	// We'll use a simple array to check priority.
-	var stellarTxtQueue = []map[string][StellarTxtResponse]
 	responseChannel, errorChannel := make(chan StellarTxtResponse), make(chan StellarTxtResponse)
 
 	for _, url := range urls {

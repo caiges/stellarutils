@@ -38,7 +38,7 @@ func ResolveFederationUser(user string) FederationResponse {
 	params.Add("type", "federation")
 
 	// Make request to federation service.
-	resp, err := http.Get(fedURL + "?" + params.Encode())
+	resp, err := http.Get(federationURL + "?" + params.Encode())
 	if err != nil {
 		fmt.Println("Couldn't query federation service")
 	}
