@@ -23,6 +23,17 @@ func TestAddDuplicate(t *testing.T) {
 	}
 }
 
+func TestRemove(t *testing.T) {
+	queue := StellarTxtQueue{}
+	queue.Add(StellarTxtResponse{URL: "1", Body: "blars"})
+
+	queue.Remove("1")
+
+	if len(queue.Queue) != 0 {
+		t.Errorf("Should have an empty queue since we removed the only item in it but had: %v", queue.Queue)
+	}
+}
+
 func TestExists(t *testing.T) {
 	queue := StellarTxtQueue{}
 	queue.Add(StellarTxtResponse{URL: "1", Body: "blars"})

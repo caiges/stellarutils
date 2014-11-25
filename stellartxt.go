@@ -30,6 +30,25 @@ func (queue *StellarTxtQueue) Add(stellarTxtResponse StellarTxtResponse) (int, e
 	return len(queue.Queue) - 1, nil
 }
 
+func (queue *StellarTxtQueue) Remove(url string) (*StellarTxtResponse, error) {
+	for i, value := range queue.Queue {
+		if value.URL == url {
+			newQueue := queue.Queue[0:i]
+
+			if len(queue.Queue)-1 > i {
+				queue.Queue = append(queue.Queue, newQueue...)
+				queue.Queue = append(queue.Queue, queue.Queue[i+1:len(queue.Queue)]...)
+			} else {
+				queue.Queue = newQueue
+			}
+
+			return &value, nil
+		}
+	}
+
+	return nil, nil
+}
+
 func (queue *StellarTxtQueue) Exists(url string) bool {
 	for _, value := range queue.Queue {
 		if url == value.URL {
@@ -72,9 +91,12 @@ func ResolveFederationURL(domainVariants []string) (string, error) {
 }
 
 func FetchStellarTxt(urls []string) (string, error) {
+	responseQueue := StellarTxtQueue{}
 	responseChannel, errorChannel := make(chan StellarTxtResponse), make(chan StellarTxtResponse)
 
 	for _, url := range urls {
+		// Queue up the responses.
+		responseQueue.Add(StellarTxtResponse{URL: url})
 		// Launch a goroutine to fetch the URL.
 		go func(url string) {
 			// Fetch the URL.
@@ -91,9 +113,11 @@ func FetchStellarTxt(urls []string) (string, error) {
 		select {
 		case resp := <-responseChannel:
 			// Set response on queue item. If response satisfies index 0 return it.
+			responseQueue.SetResult(resp.URL, resp.Body)
 			fmt.Printf("%v", resp)
 		case resp := <-errorChannel:
 			// Remove from queue.
+			responseQueue.Remove(resp.URL)
 			// Check next item in queue for response and return it, otherwise do nothing.
 			fmt.Printf("%v", resp)
 		}
