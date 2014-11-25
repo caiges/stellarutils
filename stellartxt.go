@@ -1,6 +1,8 @@
 package stellarutils
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -141,6 +143,18 @@ func FetchStellarTxt(urls []string) (string, error) {
 }
 
 func ParseFederationURL(stellarTxt string) (string, error) {
+	var federationURL string
+	// Go through response and find federation URL
+	scanner := bufio.NewScanner(bytes.NewBufferString(stellarTxt))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "[federation_url]" {
+			fmt.Println("Found federation URL...")
+			scanner.Scan()
+			federationURL = scanner.Text()
+			return federationURL, nil
+		}
+	}
 	return "", nil
 }
 
