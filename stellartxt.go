@@ -38,7 +38,15 @@ type StellarTxtResponse struct {
 }
 
 type StellarTxtQueue struct {
-	Queue []map[string]string
+	Queue []StellarTxtResponse
+}
+
+func (queue *StellarTxtQueue) Add(stellarTxtResponse StellarTxtResponse) (int, error) {
+	if len(queue.Queue) == 3 {
+		return -1, fmt.Errorf("stellarutils: Could not add StellarTxtResponse we already have the maximum of 3 %v", queue.Queue)
+	}
+	queue.Queue = append(queue.Queue, stellarTxtResponse)
+	return len(queue.Queue) - 1, nil
 }
 
 func ResolveFederationURL(domainVariants []string) (string, error) {
