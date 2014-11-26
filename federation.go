@@ -33,22 +33,15 @@ func ResolveFederationUser(user string) (*FederationResponse, error) {
 
 	federationURL, err := ResolveFederationURL(stellarTxtURLs)
 
-	federationBody, err := QueryFederationService(federationURL, params)
+	federationResponse, err := QueryFederationService(federationURL, params)
 	if err != nil {
 		return nil, err
 	}
-	federationResponse := FederationResponse{}
 
-	// Unmarshall the byte array into a FederationResponse type
-	err = json.Unmarshal(federationBody, &federationResponse)
-	if err != nil {
-		fmt.Println("Could not unmarshall federation response")
-	}
-
-	return &federationResponse, nil
+	return federationResponse, nil
 }
 
-func QueryFederationService(url string, params url.Values) ([]byte, error) {
+func QueryFederationService(url string, params url.Values) (*FederationResponse, error) {
 	// Make request to federation service.
 	resp, err := http.Get(url + "?" + params.Encode())
 	if err != nil {
@@ -63,7 +56,15 @@ func QueryFederationService(url string, params url.Values) ([]byte, error) {
 		fmt.Println("Invalid data from federation service")
 		return nil, err
 	}
-	return federationBody, nil
+
+	federationResponse := FederationResponse{}
+
+	// Unmarshall the byte array into a FederationResponse type
+	err = json.Unmarshal(federationBody, &federationResponse)
+	if err != nil {
+		fmt.Println("Could not unmarshall federation response")
+	}
+	return &federationResponse, nil
 }
 
 func URLVariants(domain string) []string {
