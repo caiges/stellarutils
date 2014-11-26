@@ -28,8 +28,9 @@ func (queue *StellarTxtQueue) Remove(url string) (*StellarTxtResponse, error) {
 			newQueue := queue.Queue[0:i]
 
 			if len(queue.Queue)-1 > i {
-				queue.Queue = append(queue.Queue, newQueue...)
-				queue.Queue = append(queue.Queue, queue.Queue[i+1:len(queue.Queue)]...)
+				newQueue = append(newQueue, queue.Queue[i+1:len(queue.Queue)]...)
+				queue.Queue = newQueue
+
 			} else {
 				queue.Queue = newQueue
 			}

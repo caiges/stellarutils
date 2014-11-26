@@ -3,7 +3,9 @@ package stellarutils
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
+	"time"
 )
 
 type StellarTxtResponse struct {
@@ -43,7 +45,12 @@ func fanIn(queue StellarTxtQueue) <-chan StellarTxtResponse {
 	responsesChannel := make(chan StellarTxtResponse)
 	for _, value := range queue.Queue {
 		go func(url string) {
-			responsesChannel <- <-FetchSingleStellarTxt(url)
+			select {
+			case msg := <-FetchSingleStellarTxt(url):
+				responsesChannel <- msg
+			case <-time.After(2 * time.Second):
+				responsesChannel <- StellarTxtResponse{URL: url, Err: errors.New("Timed out")}
+			}
 		}(value.URL)
 	}
 	return responsesChannel
@@ -56,15 +63,19 @@ func FetchStellarTxts(urls []string) (string, error) {
 		// Queue up the responses.
 		responseQueue.Add(StellarTxtResponse{URL: url})
 	}
-
+	fmt.Printf("%v", responseQueue.Queue)
+	responseQueue.Remove("https://stellar.api.gobold.com/stellar.txt")
+	fmt.Printf("%v", len(responseQueue.Queue))
 	responsesChannel := fanIn(responseQueue)
 
 	for {
 		select {
 		case resp := <-responsesChannel:
 			if resp.Body != "" {
+				//fmt.Printf("URL: %v, Body: %v", resp.URL, resp.Body)
 				// Set response on queue item. If response satisfies index 0 return it.
 				response, i, err := responseQueue.SetResult(resp.URL, resp.Body)
+
 				if err == nil && response != nil && i == 0 {
 					return response.Body, nil
 				}
@@ -73,6 +84,8 @@ func FetchStellarTxts(urls []string) (string, error) {
 			if resp.Err != nil {
 				// Remove from queue.
 				responseQueue.Remove(resp.URL)
+				fmt.Printf("%v", len(responseQueue.Queue))
+				fmt.Println(">>")
 				// Check next item in queue for response and return it, otherwise do nothing.
 				next := responseQueue.Head()
 				if next != nil && next.Body != "" {
