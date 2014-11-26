@@ -57,22 +57,22 @@ func (queue *StellarTxtQueue) Exists(url string) bool {
 	return false
 }
 
-func (queue *StellarTxtQueue) Get(url string) (*StellarTxtResponse, error) {
+func (queue *StellarTxtQueue) Get(url string) (*StellarTxtResponse, int, error) {
 	for i, value := range queue.Queue {
 		if value.URL == url {
-			return &queue.Queue[i], nil
+			return &queue.Queue[i], i, nil
 		}
 	}
 
-	return nil, errors.New("Item not found")
+	return nil, -1, errors.New("Item not found")
 }
 
 func (queue *StellarTxtQueue) SetResult(url string, body string) (*StellarTxtResponse, int, error) {
-	response, err := queue.Get(url)
+	response, i, err := queue.Get(url)
 	if err != nil {
 		return nil, -1, err
 	}
 
 	response.Body = body
-	return response, -1, nil
+	return response, i, nil
 }

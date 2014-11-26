@@ -62,18 +62,15 @@ func FetchStellarTxts(urls []string) (string, error) {
 	for {
 		select {
 		case resp := <-responsesChannel:
-			//fmt.Printf("%v", resp.Body)
 			if resp.Body != "" {
 				// Set response on queue item. If response satisfies index 0 return it.
 				response, i, err := responseQueue.SetResult(resp.URL, resp.Body)
-				fmt.Printf("%v", response)
 				if err == nil && response != nil && i == 0 {
 					return response.Body, nil
 				}
 			}
 
 			if resp.Err != nil {
-				fmt.Printf("%v", resp.URL)
 				// Remove from queue.
 				responseQueue.Remove(resp.URL)
 				// Check next item in queue for response and return it, otherwise do nothing.

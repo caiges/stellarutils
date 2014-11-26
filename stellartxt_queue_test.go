@@ -80,7 +80,7 @@ func TestAddOverCapacity(t *testing.T) {
 func TestGet(t *testing.T) {
 	queue := StellarTxtQueue{}
 	queue.Add(StellarTxtResponse{URL: "1", Body: "tacos"})
-	response, err := queue.Get("1")
+	response, _, err := queue.Get("1")
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,7 +89,7 @@ func TestGet(t *testing.T) {
 		t.Errorf("Should have returned correct body but had: %v", response.Body)
 	}
 
-	response, err = queue.Get("tacoshrimp")
+	response, _, err = queue.Get("tacoshrimp")
 	if err == nil {
 		t.Errorf("Error should have been returned")
 	}
@@ -99,7 +99,7 @@ func TestStellarTxtQueueSetResult(t *testing.T) {
 	queue := StellarTxtQueue{}
 	queue.Add(StellarTxtResponse{URL: "1"})
 	queue.SetResult("1", "eats tacos")
-	response, err := queue.Get("1")
+	response, _, err := queue.Get("1")
 
 	if err != nil {
 		t.Error(err)
