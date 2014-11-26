@@ -13,7 +13,7 @@ type StellarTxtResponse struct {
 }
 
 func ResolveFederationURL(urls []string) (string, error) {
-	stellarTxt, err := FetchStellarTxt(urls)
+	stellarTxt, err := FetchStellarTxts(urls)
 	if err != nil {
 		return "", err
 	}
@@ -25,40 +25,62 @@ func ResolveFederationURL(urls []string) (string, error) {
 	return federationURL, nil
 }
 
-func FetchStellarTxt(urls []string) (string, error) {
+func FetchSingleStellarTxt(url string) <-chan StellarTxtResponse {
+	responseChannel := make(chan StellarTxtResponse)
+	go func() {
+		// Fetch the URL.
+		body, err := fetch(url)
+		if err != nil {
+			responseChannel <- StellarTxtResponse{URL: url, Err: err}
+			return
+		}
+		responseChannel <- StellarTxtResponse{URL: url, Body: body}
+	}()
+	return responseChannel
+}
+
+func fanIn(queue StellarTxtQueue) <-chan StellarTxtResponse {
+	responsesChannel := make(chan StellarTxtResponse)
+	for _, value := range queue.Queue {
+		go func(url string) {
+			responsesChannel <- <-FetchSingleStellarTxt(url)
+		}(value.URL)
+	}
+	return responsesChannel
+}
+
+func FetchStellarTxts(urls []string) (string, error) {
 	responseQueue := StellarTxtQueue{}
-	responseChannel, errorChannel := make(chan StellarTxtResponse), make(chan StellarTxtResponse)
 
 	for _, url := range urls {
 		// Queue up the responses.
 		responseQueue.Add(StellarTxtResponse{URL: url})
-		// Launch a goroutine to fetch the URL.
-		go func(url string) {
-			// Fetch the URL.
-			body, err := fetch(url)
-			if err != nil {
-				errorChannel <- StellarTxtResponse{URL: url, Err: err}
-				return
-			}
-			responseChannel <- StellarTxtResponse{URL: url, Body: body}
-		}(url)
 	}
 
-	for i := 0; i < len(urls); i++ {
+	responsesChannel := fanIn(responseQueue)
+
+	for {
 		select {
-		case resp := <-responseChannel:
-			// Set response on queue item. If response satisfies index 0 return it.
-			response, i, err := responseQueue.SetResult(resp.URL, resp.Body)
-			if err == nil && response != nil && i == 0 {
-				return response.Body, nil
+		case resp := <-responsesChannel:
+			//fmt.Printf("%v", resp.Body)
+			if resp.Body != "" {
+				// Set response on queue item. If response satisfies index 0 return it.
+				response, i, err := responseQueue.SetResult(resp.URL, resp.Body)
+				fmt.Printf("%v", response)
+				if err == nil && response != nil && i == 0 {
+					return response.Body, nil
+				}
 			}
-		case resp := <-errorChannel:
-			// Remove from queue.
-			responseQueue.Remove(resp.URL)
-			// Check next item in queue for response and return it, otherwise do nothing.
-			next := responseQueue.Head()
-			if next != nil && next.Body != "" {
-				return next.Body, nil
+
+			if resp.Err != nil {
+				fmt.Printf("%v", resp.URL)
+				// Remove from queue.
+				responseQueue.Remove(resp.URL)
+				// Check next item in queue for response and return it, otherwise do nothing.
+				next := responseQueue.Head()
+				if next != nil && next.Body != "" {
+					return next.Body, nil
+				}
 			}
 		}
 	}
