@@ -18,39 +18,26 @@ type FederationResponse struct {
 	} `json:"federation_json"`
 }
 
-func ResolveFederationUser(user string) FederationResponse {
+func ResolveFederationUser(user string) (*FederationResponse, error) {
 	userInfo := strings.Split(user, "@")
 	username := userInfo[0]
 	domain := userInfo[1]
-	params := url.Values{}
-	stellarTxtDomains := DomainVariants(domain)
 
-	// Append "/stellar.txt" to the end of each variant.
-	for i, _ := range stellarTxtDomains {
-		stellarTxtDomains[i] += "/stellar.txt"
-	}
-
-	federationURL, err := ResolveFederationURL(stellarTxtDomains)
-	fmt.Printf("%v", federationURL)
 	// Add required URL params
+	params := url.Values{}
 	params.Add("destination", username)
 	params.Add("domain", domain)
 	params.Add("type", "federation")
 
-	// Make request to federation service.
-	resp, err := http.Get(federationURL + "?" + params.Encode())
-	if err != nil {
-		fmt.Printf("URL: %v", federationURL)
-		fmt.Println("Couldn't query federation service")
-	}
-	defer resp.Body.Close()
+	stellarTxtURLs := URLVariants(domain)
 
-	// Read response into byte array
-	federationBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Invalid data from federation service")
-	}
+	federationURL, err := ResolveFederationURL(stellarTxtURLs)
+	fmt.Printf("%v", federationURL)
 
+	federationBody, err := QueryFederationService(federationURL, params)
+	if err != nil {
+		return nil, err
+	}
 	federationResponse := FederationResponse{}
 
 	// Unmarshall the byte array into a FederationResponse type
@@ -59,11 +46,31 @@ func ResolveFederationUser(user string) FederationResponse {
 		fmt.Println("Could not unmarshall federation response")
 	}
 
-	return federationResponse
+	return &federationResponse, nil
 }
 
-func DomainVariants(domain string) []string {
+func QueryFederationService(url string, params url.Values) ([]byte, error) {
+	// Make request to federation service.
+	resp, err := http.Get(url + "?" + params.Encode())
+	if err != nil {
+		fmt.Printf("URL: %v", url)
+		fmt.Println("Couldn't query federation service")
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read response into byte array
+	federationBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Invalid data from federation service")
+		return nil, err
+	}
+
+	return federationBody, nil
+}
+
+func URLVariants(domain string) []string {
 	// Search order specified in https://github.com/stellar/docs/blob/master/docs/Stellar.txt.md
-	variants := []string{"https://stellar." + domain, "https://" + domain, "https://www." + domain}
+	variants := []string{"https://stellar." + domain + "/stellar.txt", "https://" + domain + "/stellar.txt", "https://www." + domain + "/stellar.txt"}
 	return variants
 }
