@@ -32,7 +32,6 @@ func ResolveFederationUser(user string) (*FederationResponse, error) {
 	stellarTxtURLs := URLVariants(domain)
 
 	federationURL, err := ResolveFederationURL(stellarTxtURLs)
-	fmt.Printf("%v", federationURL)
 
 	federationBody, err := QueryFederationService(federationURL, params)
 	if err != nil {
@@ -53,7 +52,6 @@ func QueryFederationService(url string, params url.Values) ([]byte, error) {
 	// Make request to federation service.
 	resp, err := http.Get(url + "?" + params.Encode())
 	if err != nil {
-		fmt.Printf("URL: %v", url)
 		fmt.Println("Couldn't query federation service")
 		return nil, err
 	}
@@ -65,7 +63,6 @@ func QueryFederationService(url string, params url.Values) ([]byte, error) {
 		fmt.Println("Invalid data from federation service")
 		return nil, err
 	}
-
 	return federationBody, nil
 }
 

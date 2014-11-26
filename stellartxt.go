@@ -20,7 +20,6 @@ func ResolveFederationURL(urls []string) (string, error) {
 		return "", err
 	}
 	federationURL, err := ParseFederationURL(stellarTxt)
-	fmt.Printf("%v", federationURL)
 	if err != nil {
 		return "", err
 	}
@@ -63,16 +62,13 @@ func FetchStellarTxts(urls []string) (string, error) {
 		// Queue up the responses.
 		responseQueue.Add(StellarTxtResponse{URL: url})
 	}
-	fmt.Printf("%v", responseQueue.Queue)
-	responseQueue.Remove("https://stellar.api.gobold.com/stellar.txt")
-	fmt.Printf("%v", len(responseQueue.Queue))
+
 	responsesChannel := fanIn(responseQueue)
 
 	for {
 		select {
 		case resp := <-responsesChannel:
 			if resp.Body != "" {
-				//fmt.Printf("URL: %v, Body: %v", resp.URL, resp.Body)
 				// Set response on queue item. If response satisfies index 0 return it.
 				response, i, err := responseQueue.SetResult(resp.URL, resp.Body)
 
@@ -84,8 +80,6 @@ func FetchStellarTxts(urls []string) (string, error) {
 			if resp.Err != nil {
 				// Remove from queue.
 				responseQueue.Remove(resp.URL)
-				fmt.Printf("%v", len(responseQueue.Queue))
-				fmt.Println(">>")
 				// Check next item in queue for response and return it, otherwise do nothing.
 				next := responseQueue.Head()
 				if next != nil && next.Body != "" {
